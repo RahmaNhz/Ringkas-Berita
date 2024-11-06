@@ -1,21 +1,20 @@
 import streamlit as st
 import pandas as pd
-import nltk
+import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 import matplotlib.pyplot as plt
 
-# Download NLTK package punkt
-
+# Fungsi manual untuk memisahkan kalimat berdasarkan tanda titik
+def sentence_tokenize(text):
+    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+    return [sentence.strip() for sentence in sentences if sentence]
 
 # Fungsi untuk memproses dan meringkas teks
 def summarize_text(text, num_sentences=3):
-    nltk.download('punkt', quiet=True)
-    nltk.download("stopwords", quiet=True)
-    
-    # Tokenisasi kalimat
-    kalimat = nltk.sent_tokenize(text)
+    # Tokenisasi kalimat tanpa NLTK
+    kalimat = sentence_tokenize(text)
 
     # Menghitung TF-IDF untuk setiap kalimat
     vectorizer = TfidfVectorizer()
@@ -48,7 +47,6 @@ def summarize_text(text, num_sentences=3):
 
 # Fungsi untuk menampilkan graf
 def plot_graph(G, kalimat):
-    # Memotong kalimat untuk label graf
     def potong_kalimat(kalimat, max_len=40):
         if len(kalimat) > max_len:
             return kalimat[:max_len] + '...'
@@ -56,7 +54,6 @@ def plot_graph(G, kalimat):
 
     labels = {i: potong_kalimat(kalimat[i]) for i in range(len(kalimat))}
 
-    # Plot graf
     plt.figure(figsize=(12, 10))
     pos = nx.spring_layout(G, seed=42)
     nx.draw(G, pos, with_labels=False, node_color='skyblue', node_size=900, edge_color='gray', width=2)
@@ -72,38 +69,27 @@ st.write("Masukkan paragraf berita yang ingin diringkas, lalu pilih jumlah kalim
 text = st.text_area("Masukkan Teks Berita", height=200)
 
 # Pilihan jumlah kalimat ringkasan
-#num_sentences = st.slider("Pilih Jumlah Kalimat Ringkasan", min_value=2, max_value=5, value=3)
 num_sentences = st.selectbox(
     "Pilih Jumlah Kalimat Ringkasan", 
     options=[2, 3, 4, 5], 
-    index=2  # Set default selection to 3 (index 2)
+    index=2  
 )
 
 if st.button("Buat Ringkasan"):
     if text:
-        # Dapatkan ringkasan, graf, dan cosine similarity
         summary, G, kalimat, cosine = summarize_text(text, num_sentences=num_sentences)
 
-        # Tampilkan ringkasan
         st.subheader("Ringkasan Berita:")
         st.write(summary)
 
-        # Tampilkan graf antar kalimat
         st.subheader("Graf Antar Kalimat Berdasarkan Cosine Similarity:")
         plot_graph(G, kalimat)
-       # Menampilkan nilai betweenness centrality tertinggi untuk setiap kalimat
+
         st.subheader("Centrality Tertinggi untuk Setiap Kalimat:")
-
-        # Ambil betweenness centrality dari graf
         betweenness_centrality = nx.betweenness_centrality(G)
-
-        # List untuk menyimpan centrality dan indeks kalimat
         centrality_scores = [(i, betweenness_centrality[i]) for i in range(len(kalimat))]
-
-        # Urutkan berdasarkan nilai betweenness centrality tertinggi
         sorted_centrality_scores = sorted(centrality_scores, key=lambda x: x[1], reverse=True)
-
-        # Tampilkan hasil yang sudah diurutkan
+        
         for index, centrality in sorted_centrality_scores:
             st.write(f"Kalimat {index + 1}: {kalimat[index]}")
             st.write(f"Betweenness Centrality: {centrality:.4f}")
