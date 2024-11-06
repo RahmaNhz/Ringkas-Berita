@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 # Fungsi untuk memproses dan meringkas teks
 def summarize_text(text, num_sentences=3):
     nltk.download('punkt', quiet=True)
+    nltk.download("stopwords", quiet=True)
+    
     # Tokenisasi kalimat
     kalimat = nltk.sent_tokenize(text)
 
