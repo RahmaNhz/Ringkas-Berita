@@ -7,7 +7,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 # Download NLTK package punkt
-nltk.download('punkt')
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Fungsi untuk memproses dan meringkas teks
 def summarize_text(text, num_sentences=3):
